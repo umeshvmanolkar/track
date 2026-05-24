@@ -234,7 +234,8 @@ async function fetchData() {
       showToast("Synchronized demo data successfully.", "success");
     } else {
       // Fetch dynamic spreadsheet data
-      const response = await fetch(`${CONFIG.API_URL}?action=getDashboardData`);
+      const username = STATE.user ? STATE.user.username : '';
+      const response = await fetch(`${CONFIG.API_URL}?action=getDashboardData&username=${encodeURIComponent(username)}`);
       const result = await response.json();
       
       if (result.success) {
@@ -302,6 +303,7 @@ async function handleAddTrade(e) {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
           action: 'addTrade',
+          username: STATE.user.username,
           trade: newTrade
         })
       });
@@ -343,7 +345,8 @@ async function handleDeleteTrade(tradeId) {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
           action: 'deleteTrade',
-          tradeId: tradeId
+          tradeId: tradeId,
+          username: STATE.user.username
         })
       });
       
