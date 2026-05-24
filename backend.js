@@ -133,6 +133,20 @@ function getDashboardData(username) {
           if (val instanceof Date) {
             val = val.toISOString();
           }
+        } else if (headers[j] === "TimeSlot") {
+          if (val instanceof Date) {
+            try {
+              val = Utilities.formatDate(val, Session.getScriptTimeZone(), "h:mm a").toUpperCase();
+            } catch (e) {
+              var hours = val.getHours();
+              var minutes = val.getMinutes();
+              var ampm = hours >= 12 ? 'PM' : 'AM';
+              hours = hours % 12;
+              hours = hours ? hours : 12;
+              minutes = minutes < 10 ? '0' + minutes : minutes;
+              val = hours + ':' + minutes + ' ' + ampm;
+            }
+          }
         }
         trade[headers[j]] = val;
       }

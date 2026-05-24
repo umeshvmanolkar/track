@@ -239,7 +239,10 @@ async function fetchData() {
       const result = await response.json();
       
       if (result.success) {
-        STATE.trades = result.trades || [];
+        STATE.trades = (result.trades || []).map(trade => {
+          trade.TimeSlot = normalizeTimeSlot(trade.TimeSlot);
+          return trade;
+        });
         STATE.pairs = result.pairs || CONFIG.DEFAULT_PAIRS;
         showToast("Synchronized sheet data successfully.", "success");
       } else {
@@ -883,6 +886,43 @@ function formatDate(dateVal) {
   if (day.length < 2) day = '0' + day;
   
   return [year, month, day].join('-');
+}
+
+// Normalize TimeSlot values to match exact dashboard keys (10:30 AM, 2:30 PM, 6:30 PM)
+function normalizeTimeSlot(timeStr) {
+  if (!timeStr) return "10:30 AM";
+  
+  let cleanStr = String(timeStr).trim().toUpperCase();
+  
+  // Handle ISO date-time string returned by Google Sheets (e.g. 1899-12-30T05:08:50.000Z)
+  if (cleanStr.includes('T')) {
+    const d = new Date(cleanStr);
+    if (!isNaN(d.getTime())) {
+      const hours = d.getHours();
+      if (hours < 12) {
+        return "10:30 AM";
+      } else if (hours < 16) {
+        return "2:30 PM";
+      } else {
+        return "6:30 PM";
+      }
+    }
+  }
+  
+  if (cleanStr.includes("10:30")) return "10:30 AM";
+  if (cleanStr.includes("2:30")) return "2:30 PM";
+  if (cleanStr.includes("6:30")) return "6:30 PM";
+  
+  if (cleanStr.includes("AM")) {
+    return "10:30 AM";
+  } else if (cleanStr.includes("PM")) {
+    if (cleanStr.startsWith("2") || cleanStr.startsWith("02") || cleanStr.startsWith("14")) {
+      return "2:30 PM";
+    }
+    return "6:30 PM";
+  }
+  
+  return timeStr;
 }
 
 // Generate Mock Data for first-time launch
