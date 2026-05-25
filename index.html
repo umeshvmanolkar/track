@@ -318,15 +318,12 @@
               </div>
             </div>
 
-            <!-- 3. Profit Risk-Reward Dropdown -->
+            <!-- 3. Target Reward Ratio (RR) Custom Input -->
             <div class="form-group">
               <label class="form-label" for="trade-rr">Target Reward Ratio (RR)</label>
-              <select id="trade-rr" class="form-select-native" required>
-                <option value="1:1" selected>1:1</option>
-                <option value="1:2">1:2</option>
-                <option value="1:3">1:3</option>
-                <option value="1:4">1:4</option>
-              </select>
+              <div class="input-wrapper">
+                <input type="text" id="trade-rr" class="form-input" style="padding-left:16px;" placeholder="e.g. 1.5, 2.4, or 1:2" value="1.0" required>
+              </div>
             </div>
 
             <!-- 4. Session Time Dropdown -->

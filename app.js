@@ -931,12 +931,20 @@ function renderCharts() {
 
 // ================= HELPERS & SETUP UTILITIES =================
 
-// Parse RR String (e.g., "1:2" => 2.0)
+// Parse RR String (e.g., "1:2" => 2.0 or "2.4" => 2.4)
 function parseRR(rrStr) {
   if (!rrStr) return 1.0;
-  const parts = rrStr.split(':');
-  if (parts.length < 2) return 1.0;
-  const reward = parseFloat(parts[1]);
+  const cleanStr = String(rrStr).trim();
+  
+  if (cleanStr.includes(':')) {
+    const parts = cleanStr.split(':');
+    if (parts.length >= 2) {
+      const reward = parseFloat(parts[1]);
+      return isNaN(reward) ? 1.0 : reward;
+    }
+  }
+  
+  const reward = parseFloat(cleanStr);
   return isNaN(reward) ? 1.0 : reward;
 }
 
