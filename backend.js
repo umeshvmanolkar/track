@@ -21,7 +21,7 @@ function getSheetByName(name) {
       sheet.appendRow(["Username", "Password"]);
       sheet.appendRow(["admin", "admin123"]); // default fallback user
     } else if (name === "Trades") {
-      sheet.appendRow(["ID", "Timestamp", "Date", "Pair", "Outcome", "RR", "TimeSlot", "Username"]);
+      sheet.appendRow(["ID", "Timestamp", "Date", "Pair", "Outcome", "RR", "TimeSlot", "Username", "FVG"]);
     } else if (name === "Pairs") {
       sheet.appendRow(["PairName"]);
       var defaults = ["XAUUSD", "NAS100", "US30", "EURUSD", "USDJPY", "GBPUSD", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD"];
@@ -186,7 +186,16 @@ function handleAddTrade(trade, username) {
   var usernameColIdx = headers.indexOf("Username");
   if (usernameColIdx === -1) {
     sheet.getRange(1, headers.length + 1).setValue("Username");
-    usernameColIdx = headers.length;
+    headers = sheet.getDataRange().getValues()[0];
+    usernameColIdx = headers.indexOf("Username");
+  }
+  
+  // If the sheet doesn't have the FVG header, add it
+  var fvgColIdx = headers.indexOf("FVG");
+  if (fvgColIdx === -1) {
+    sheet.getRange(1, headers.length + 1).setValue("FVG");
+    headers = sheet.getDataRange().getValues()[0];
+    fvgColIdx = headers.indexOf("FVG");
   }
   
   // Generate Unique ID
@@ -195,7 +204,7 @@ function handleAddTrade(trade, username) {
   var dateStr = trade.date || new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
   
   // Prepare row data according to columns
-  var rowData = new Array(Math.max(8, headers.length));
+  var rowData = new Array(headers.length);
   rowData[0] = tradeId;
   rowData[1] = timestamp;
   rowData[2] = dateStr;
@@ -204,6 +213,7 @@ function handleAddTrade(trade, username) {
   rowData[5] = trade.rr;      // "1:1", "1:2", etc.
   rowData[6] = trade.timeSlot; // "10:30 AM", "2:30 PM", "6:30 PM"
   rowData[usernameColIdx] = username;
+  rowData[fvgColIdx] = trade.fvg || "Inside 1 Hour Zone";
   
   sheet.appendRow(rowData);
   

@@ -10,7 +10,8 @@ const STATE = {
     session: null,
     pairPerf: null,
     pairWinLoss: null,
-    sessionPerf: null
+    sessionPerf: null,
+    fvg: null
   },
   isDemoMode: true
 };
@@ -55,6 +56,7 @@ const DOMElements = {
   tradePairInput: document.getElementById('trade-pair'),
   tradeRRSelect: document.getElementById('trade-rr'),
   tradeTimeslotSelect: document.getElementById('trade-timeslot'),
+  tradeFVGSelect: document.getElementById('trade-fvg'),
   tradeDateInput: document.getElementById('trade-date'),
   
   // Table
@@ -241,6 +243,7 @@ async function fetchData() {
       if (result.success) {
         STATE.trades = (result.trades || []).map(trade => {
           trade.TimeSlot = normalizeTimeSlot(trade.TimeSlot);
+          trade.FVG = normalizeFVG(trade.FVG);
           return trade;
         });
         STATE.pairs = result.pairs || CONFIG.DEFAULT_PAIRS;
@@ -273,9 +276,10 @@ async function handleAddTrade(e) {
   const outcome = document.querySelector('input[name="outcome"]:checked').value;
   const rr = DOMElements.tradeRRSelect.value;
   const timeSlot = DOMElements.tradeTimeslotSelect.value;
+  const fvg = DOMElements.tradeFVGSelect.value;
   const date = DOMElements.tradeDateInput.value;
   
-  const newTrade = { pair, outcome, rr, timeSlot, date };
+  const newTrade = { pair, outcome, rr, timeSlot, fvg, date };
   
   showLoader(true);
   closeMobileModal();
@@ -293,7 +297,8 @@ async function handleAddTrade(e) {
         Pair: pair,
         Outcome: outcome,
         RR: rr,
-        TimeSlot: timeSlot
+        TimeSlot: timeSlot,
+        FVG: fvg
       };
       
       STATE.trades.unshift(mockTrade);
@@ -503,6 +508,7 @@ function renderTradesTable() {
       </td>
       <td>${trade.RR}</td>
       <td>${trade.TimeSlot}</td>
+      <td><span style="font-size: 0.85rem; color: var(--text-secondary);">${trade.FVG || 'N/A'}</span></td>
       <td style="font-weight:700; color: ${isWin ? 'var(--success)' : 'var(--danger)'};">${rVal}</td>
       <td style="text-align:center;">
         <button class="delete-action-btn" data-id="${trade.ID}" title="Delete trade">
@@ -859,6 +865,68 @@ function renderCharts() {
       }
     }
   });
+
+  // 6. FVG Type Performance (Wins vs Losses grouping)
+  const fvgTypes = ["Inside 1 Hour Zone", "Middle", "Outside 1 Hour Zone"];
+  const winsByFVG = [0, 0, 0];
+  const lossesByFVG = [0, 0, 0];
+  
+  trades.forEach(trade => {
+    const fvgVal = trade.FVG || "Inside 1 Hour Zone";
+    const fvgIdx = fvgTypes.indexOf(fvgVal);
+    if (fvgIdx !== -1) {
+      if (trade.Outcome.trim().toLowerCase() === 'profit') {
+        winsByFVG[fvgIdx]++;
+      } else {
+        lossesByFVG[fvgIdx]++;
+      }
+    }
+  });
+
+  if (STATE.charts.fvg) {
+    STATE.charts.fvg.destroy();
+  }
+  
+  const ctxFVG = document.getElementById('fvg-chart').getContext('2d');
+  STATE.charts.fvg = new Chart(ctxFVG, {
+    type: 'bar',
+    data: {
+      labels: fvgTypes,
+      datasets: [
+        {
+          label: 'Profits (Wins)',
+          data: winsByFVG,
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        },
+        {
+          label: 'Losses',
+          data: lossesByFVG,
+          backgroundColor: '#f43f5e',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#f8fafc', boxWidth: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.03)' },
+          ticks: { color: '#94a3b8', stepSize: 1 }
+        }
+      }
+    }
+  });
 }
 
 // ================= HELPERS & SETUP UTILITIES =================
@@ -925,27 +993,40 @@ function normalizeTimeSlot(timeStr) {
   return timeStr;
 }
 
+// Normalize FVG values to match exact dropdown options
+function normalizeFVG(fvgStr) {
+  if (!fvgStr) return "Inside 1 Hour Zone";
+  let cleanStr = String(fvgStr).trim().toUpperCase();
+  if (cleanStr.includes("INSIDE")) return "Inside 1 Hour Zone";
+  if (cleanStr.includes("MIDDLE")) return "Middle";
+  if (cleanStr.includes("OUTSIDE")) return "Outside 1 Hour Zone";
+  return fvgStr;
+}
+
 // Generate Mock Data for first-time launch
 function loadMockData() {
   const localMock = localStorage.getItem('journal_mock_trades');
   
   if (localMock) {
-    STATE.trades = JSON.parse(localMock);
+    STATE.trades = JSON.parse(localMock).map(trade => {
+      trade.FVG = normalizeFVG(trade.FVG);
+      return trade;
+    });
     return;
   }
   
   // Set up default trades to make the dashboard charts look amazing initially!
   const defaultTrades = [
-    { ID: "M1", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 240).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "XAUUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "10:30 AM" },
-    { ID: "M2", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 210).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "US30", Outcome: "Loss", RR: "1:2", TimeSlot: "2:30 PM" },
-    { ID: "M3", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 180).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "NAS100", Outcome: "Profit", RR: "1:3", TimeSlot: "6:30 PM" },
-    { ID: "M4", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 150).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "EURUSD", Outcome: "Profit", RR: "1:1", TimeSlot: "10:30 AM" },
-    { ID: "M5", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDJPY", Outcome: "Loss", RR: "1:3", TimeSlot: "2:30 PM" },
-    { ID: "M6", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "GBPUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "10:30 AM" },
-    { ID: "M7", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 80).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDCHF", Outcome: "Loss", RR: "1:2", TimeSlot: "6:30 PM" },
-    { ID: "M8", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 60).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "AUDUSD", Outcome: "Profit", RR: "1:3", TimeSlot: "2:30 PM" },
-    { ID: "M9", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 40).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDCAD", Outcome: "Loss", RR: "1:1", TimeSlot: "10:30 AM" },
-    { ID: "M10", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "NZDUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "6:30 PM" }
+    { ID: "M1", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 240).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "XAUUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "10:30 AM", FVG: "Inside 1 Hour Zone" },
+    { ID: "M2", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 210).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "US30", Outcome: "Loss", RR: "1:2", TimeSlot: "2:30 PM", FVG: "Middle" },
+    { ID: "M3", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 180).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "NAS100", Outcome: "Profit", RR: "1:3", TimeSlot: "6:30 PM", FVG: "Outside 1 Hour Zone" },
+    { ID: "M4", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 150).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "EURUSD", Outcome: "Profit", RR: "1:1", TimeSlot: "10:30 AM", FVG: "Inside 1 Hour Zone" },
+    { ID: "M5", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDJPY", Outcome: "Loss", RR: "1:3", TimeSlot: "2:30 PM", FVG: "Middle" },
+    { ID: "M6", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "GBPUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "10:30 AM", FVG: "Outside 1 Hour Zone" },
+    { ID: "M7", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 80).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDCHF", Outcome: "Loss", RR: "1:2", TimeSlot: "6:30 PM", FVG: "Inside 1 Hour Zone" },
+    { ID: "M8", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 60).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "AUDUSD", Outcome: "Profit", RR: "1:3", TimeSlot: "2:30 PM", FVG: "Middle" },
+    { ID: "M9", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 40).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "USDCAD", Outcome: "Loss", RR: "1:1", TimeSlot: "10:30 AM", FVG: "Outside 1 Hour Zone" },
+    { ID: "M10", Timestamp: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(), Date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString().split('T')[0] + "T00:00:00.000Z", Pair: "NZDUSD", Outcome: "Profit", RR: "1:2", TimeSlot: "6:30 PM", FVG: "Inside 1 Hour Zone" }
   ];
   
   // Sort reverse chronological initially to display newest in list

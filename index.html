@@ -268,6 +268,16 @@
             <canvas id="session-perf-chart"></canvas>
           </div>
         </div>
+
+        <!-- Performance by FVG Type -->
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Performance by FVG Type</h3>
+          </div>
+          <div class="chart-container-wrap">
+            <canvas id="fvg-chart"></canvas>
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Panel (Form + Data Table Grid) -->
@@ -329,6 +339,16 @@
               </select>
             </div>
 
+            <!-- FVG Type Dropdown -->
+            <div class="form-group">
+              <label class="form-label" for="trade-fvg">FVG Type</label>
+              <select id="trade-fvg" class="form-select-native" required>
+                <option value="Inside 1 Hour Zone" selected>Inside 1 Hour Zone</option>
+                <option value="Middle">Middle</option>
+                <option value="Outside 1 Hour Zone">Outside 1 Hour Zone</option>
+              </select>
+            </div>
+
             <!-- 5. Custom Date Option -->
             <div class="form-group">
               <label class="form-label" for="trade-date">Trade Date</label>
@@ -362,6 +382,7 @@
                   <th>Outcome</th>
                   <th>Setup RR</th>
                   <th>Session Time</th>
+                  <th>FVG Type</th>
                   <th>R-Multiple</th>
                   <th style="width:60px; text-align:center;">Action</th>
                 </tr>
