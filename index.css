@@ -1277,3 +1277,165 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 8px;
   }
 }
+
+/* ================= DAILY PERFORMANCE CALENDAR ================= */
+.calendar-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-nav .chart-tab {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-grid-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 6px;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  flex: 1;
+  gap: 6px;
+}
+
+.calendar-day-cell {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 48px;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.calendar-day-cell:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.calendar-day-number {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.calendar-day-cell.empty {
+  background: transparent;
+  border: none;
+  pointer-events: none;
+}
+
+.calendar-day-cell.today .calendar-day-number {
+  color: var(--primary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--primary);
+}
+
+.calendar-day-rr {
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.calendar-day-count {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+/* Day Outcomes */
+.calendar-day-cell.profit {
+  background: var(--success-glow);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.calendar-day-cell.profit .calendar-day-number {
+  color: var(--text-primary);
+}
+.calendar-day-cell.profit .calendar-day-rr {
+  color: var(--success);
+}
+.calendar-day-cell.profit .calendar-day-count {
+  color: var(--success-hover);
+}
+
+.calendar-day-cell.loss {
+  background: var(--danger-glow);
+  border-color: rgba(244, 63, 94, 0.2);
+}
+.calendar-day-cell.loss .calendar-day-number {
+  color: var(--text-primary);
+}
+.calendar-day-cell.loss .calendar-day-rr {
+  color: var(--danger);
+}
+.calendar-day-cell.loss .calendar-day-count {
+  color: var(--danger-hover);
+}
+
+.calendar-day-cell.breakeven {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.calendar-day-cell.breakeven .calendar-day-rr {
+  color: var(--text-secondary);
+}
+
+/* Height Optimizations for Calendar */
+@media (max-height: 750px) {
+  .calendar-day-cell {
+    min-height: 36px;
+    padding: 2px 2px;
+  }
+  .calendar-day-rr {
+    font-size: 0.65rem;
+    margin-top: 1px;
+  }
+  .calendar-day-count {
+    font-size: 0.5rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .calendar-day-cell {
+    min-height: 30px;
+    padding: 1px 1px;
+  }
+  .calendar-day-rr {
+    font-size: 0.6rem;
+    margin-top: 0;
+  }
+  .calendar-day-count {
+    display: none;
+  }
+}

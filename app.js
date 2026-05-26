@@ -13,7 +13,8 @@ const STATE = {
     sessionPerf: null,
     fvg: null
   },
-  isDemoMode: true
+  isDemoMode: true,
+  calendarDate: new Date()
 };
 
 // ================= DOM ELEMENT REFERENCES =================
@@ -63,6 +64,12 @@ const DOMElements = {
   tradesTableBody: document.getElementById('trades-table-body'),
   tableEmptyState: document.getElementById('table-empty-state'),
   historyCount: document.getElementById('history-count'),
+
+  // Calendar Elements
+  calendarMonthYear: document.getElementById('calendar-month-year'),
+  calendarDays: document.getElementById('calendar-days'),
+  calPrevMonthBtn: document.getElementById('cal-prev-month-btn'),
+  calNextMonthBtn: document.getElementById('cal-next-month-btn'),
 
   // Responsive Layout Swapping
   desktopFormWrapper: document.getElementById('desktop-trade-form-wrapper'),
@@ -927,6 +934,131 @@ function renderCharts() {
       }
     }
   });
+
+  // 7. Render Daily Performance Calendar
+  renderCalendar();
+}
+
+// Render Daily Performance Calendar
+function renderCalendar() {
+  const calendarDays = DOMElements.calendarDays;
+  const calendarMonthYear = DOMElements.calendarMonthYear;
+  if (!calendarDays || !calendarMonthYear) return;
+  
+  calendarDays.innerHTML = '';
+  
+  const currentDate = STATE.calendarDate;
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth(); // 0-indexed
+  
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  calendarMonthYear.textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  // Group trades by date string YYYY-MM-DD
+  const tradesByDate = {};
+  STATE.trades.forEach(trade => {
+    const dateStr = getTradeLocalDateStr(trade);
+    if (!dateStr) return;
+    
+    if (!tradesByDate[dateStr]) {
+      tradesByDate[dateStr] = {
+        netR: 0.0,
+        wins: 0,
+        losses: 0
+      };
+    }
+    
+    const isWin = trade.Outcome.trim().toLowerCase() === 'profit';
+    const rVal = isWin ? parseRR(trade.RR) : -CONFIG.RISK_PER_TRADE_R;
+    tradesByDate[dateStr].netR += rVal;
+    if (isWin) {
+      tradesByDate[dateStr].wins++;
+    } else {
+      tradesByDate[dateStr].losses++;
+    }
+  });
+  
+  // Render empty cells for offset of first day
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'calendar-day-cell empty';
+    calendarDays.appendChild(emptyCell);
+  }
+  
+  // Current date for comparison
+  const today = new Date();
+  const isCurrentMonthYear = today.getFullYear() === year && today.getMonth() === month;
+  const todayDateNum = today.getDate();
+  
+  // Render day cells
+  for (let day = 1; day <= totalDaysInMonth; day++) {
+    const dayCell = document.createElement('div');
+    dayCell.className = 'calendar-day-cell';
+    
+    // Highlight today
+    if (isCurrentMonthYear && day === todayDateNum) {
+      dayCell.classList.add('today');
+    }
+    
+    // Build date key
+    const mStr = String(month + 1).padStart(2, '0');
+    const dStr = String(day).padStart(2, '0');
+    const dateKey = `${year}-${mStr}-${dStr}`;
+    
+    const dayStats = tradesByDate[dateKey];
+    
+    let statsHTML = '';
+    if (dayStats) {
+      const { netR, wins, losses } = dayStats;
+      
+      if (netR > 0) {
+        dayCell.classList.add('profit');
+      } else if (netR < 0) {
+        dayCell.classList.add('loss');
+      } else {
+        dayCell.classList.add('breakeven');
+      }
+      
+      const rSign = netR >= 0 ? '+' : '';
+      const formattedR = `${rSign}${netR.toFixed(1)}R`;
+      const countsStr = `${wins}W / ${losses}L`;
+      
+      statsHTML = `
+        <span class="calendar-day-rr">${formattedR}</span>
+        <span class="calendar-day-count">${countsStr}</span>
+      `;
+    }
+    
+    dayCell.innerHTML = `
+      <span class="calendar-day-number">${day}</span>
+      ${statsHTML}
+    `;
+    
+    calendarDays.appendChild(dayCell);
+  }
+}
+
+// Helper to get local YYYY-MM-DD from trade Date/Timestamp field
+function getTradeLocalDateStr(trade) {
+  const dateVal = trade.Date || trade.Timestamp;
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return String(dateVal).split('T')[0];
+  
+  const year = d.getFullYear();
+  let month = '' + (d.getMonth() + 1);
+  let day = '' + d.getDate();
+  
+  if (month.length < 2) month = '0' + month;
+  if (day.length < 2) day = '0' + day;
+  
+  return `${year}-${month}-${day}`;
 }
 
 // ================= HELPERS & SETUP UTILITIES =================
@@ -1172,4 +1304,14 @@ function setupEventListeners() {
   // Mobile Side Navigation Menu triggers
   DOMElements.mobileMenuToggle.addEventListener('click', toggleSidebar);
   DOMElements.sidebarOverlay.addEventListener('click', closeSidebar);
+
+  // Calendar Navigation triggers
+  DOMElements.calPrevMonthBtn.addEventListener('click', () => {
+    STATE.calendarDate.setMonth(STATE.calendarDate.getMonth() - 1);
+    renderCalendar();
+  });
+  DOMElements.calNextMonthBtn.addEventListener('click', () => {
+    STATE.calendarDate.setMonth(STATE.calendarDate.getMonth() + 1);
+    renderCalendar();
+  });
 }

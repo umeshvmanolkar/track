@@ -278,6 +278,40 @@
             <canvas id="fvg-chart"></canvas>
           </div>
         </div>
+
+        <!-- Daily Performance Calendar -->
+        <div class="glass-card chart-card calendar-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Daily Performance Calendar</h3>
+            <div class="calendar-nav">
+              <button type="button" id="cal-prev-month-btn" class="chart-tab" aria-label="Previous Month">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width:12px; height:12px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+              <span id="calendar-month-year" style="font-weight:600; font-size:0.85rem; color:var(--text-primary); min-width:90px; text-align:center;"></span>
+              <button type="button" id="cal-next-month-btn" class="chart-tab" aria-label="Next Month">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width:12px; height:12px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-grid-container">
+            <div class="calendar-weekdays">
+              <div>S</div>
+              <div>M</div>
+              <div>T</div>
+              <div>W</div>
+              <div>T</div>
+              <div>F</div>
+              <div>S</div>
+            </div>
+            <div id="calendar-days" class="calendar-days-grid">
+              <!-- Dynamically generated day cells -->
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Panel (Form + Data Table Grid) -->
